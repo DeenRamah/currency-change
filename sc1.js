@@ -1,0 +1,203 @@
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetchRequest('http://localhost:3000/api/simba-systems/settings/viewSettings');
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch settings');
+        }
+
+        const data = await response.json();
+
+        console.log(data);
+        if (data.exists) {
+            displaySettings(data.settings);
+        } else {
+            showSettingsForm();
+        }
+    } catch (error) {
+        handleError('Error fetching settings:', error);
+    }
+});
+
+function displaySettings(settings) {
+    const container = document.getElementById('mainContent');
+
+    container.innerHTML = '';
+
+    if (!settings) {
+        console.error('Settings object is null or undefined');
+        return;
+    }
+
+    const logoHtml = settings.logo
+        ? `<img src="${settings.logo}" alt="School Logo" class="school-logo">`
+        : '<p class="settings-item">No logo available</p>';
+
+    const settingsHtml = `
+        <div class="settings-view">
+            <h2 class="settings-title">${settings.name || 'School Name Not Available'}</h2>
+            <p class="settings-item"><strong>Phone:</strong> ${settings.phone || 'N/A'}</p>
+            <p class="settings-item"><strong>Email:</strong> ${settings.email || 'N/A'}</p>
+            <p class="settings-item"><strong>Address:</strong> ${settings.address || 'N/A'}</p>
+            <p class="settings-item"><strong>Motto:</strong> ${settings.motto || 'N/A'}</p>
+            <p class="settings-item"><strong>Vision:</strong> ${settings.vision || 'N/A'}</p>
+            <p class="settings-item"><strong>Type:</strong> ${settings.schoolType || 'N/A'}</p>
+            <p class="settings-item"><strong>Gender:</strong> ${settings.gender || 'N/A'}</p>
+            ${logoHtml}
+            <button class="settings-edit-btn" onclick="showSettingsForm()">Edit Settings</button>
+        </div>
+    `;
+
+    container.innerHTML = settingsHtml;
+}
+
+function showSettingsForm() {
+    const container = document.getElementById('mainContent');
+    const formHtml = document.querySelector('.school-settings-container')?.outerHTML;
+
+    container.innerHTML = formHtml || `
+        <div>
+            <p>Error: Unable to load settings form. Please refresh the page.</p>
+        </div>
+    `;
+}
+
+function handleError(message, error) {
+    console.error(message, error);
+    alert(`${message} Please try again later.`);
+}
+
+async function addSettings() {
+    const name = document.getElementById('addName').value;
+    const phone = document.getElementById('addPhone').value;
+    const email = document.getElementById('addEmail').value;
+    const address = document.getElementById('addAddress').value;
+    const motto = document.getElementById('addMotto').value;
+    const vision = document.getElementById('addVision').value;
+    const logoFile = document.getElementById('addLogo').files[0];
+    const schoolType = document.getElementById('addSchoolType').value;
+    const gender = document.getElementById('addGender').value;
+
+    if (!name || !phone || !email || !address || !schoolType || !gender) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    let logo = null;
+
+    if (logoFile) {
+        try {
+            logo = await fileToBase64(logoFile);
+        } catch (error) {
+            console.error('Error converting file to Base64:', error);
+            alert('Failed to process logo file. Please try a different file.');
+            return;
+        }
+    }
+
+    const payload = {
+        name,
+        phone,
+        email,
+        address,
+        motto,
+        vision,
+        logo,
+        schoolType,
+        gender
+    };
+
+    try {
+        const response = await fetchRequest('http://localhost:3000/api/simba-systems/settings/create', payload);
+
+        if (response.ok) {
+            alert('Settings added successfully');
+            resetSettings();
+            location.reload(); // Reload the page to reflect changes
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to add settings');
+        }
+    } catch (error) {
+        console.error('Error adding settings:', error);
+        alert('Failed to add settings. Please try again.');
+    }
+}
+
+async function editSettings() {
+    const name = document.getElementById('addName').value;
+    const phone = document.getElementById('addPhone').value;
+    const email = document.getElementById('addEmail').value;
+    const address = document.getElementById('addAddress').value;
+    const motto = document.getElementById('addMotto').value;
+    const vision = document.getElementById('addVision').value;
+    const logoFile = document.getElementById('addLogo').files[0];
+    const schoolType = document.getElementById('addSchoolType').value;
+    const gender = document.getElementById('addGender').value;
+
+    if (!name || !phone || !email || !address || !schoolType || !gender) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    let logo = null;
+
+    if (logoFile) {
+        try {
+            logo = await fileToBase64(logoFile);
+        } catch (error) {
+            console.error('Error converting file to Base64:', error);
+            alert('Failed to process logo file. Please try a different file.');
+            return;
+        }
+    }
+
+    const payload = {
+        name,
+        phone,
+        email,
+        address,
+        motto,
+        vision,
+        logo,
+        schoolType,
+        gender
+    };
+
+    try {
+        const response = await fetchRequest('http://localhost:3000/api/simba-systems/settings/edit', payload);
+
+        if (response.ok) {
+            alert('Settings updated successfully');
+            resetSettings();
+            location.reload(); // Reload the page to reflect changes
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update settings');
+        }
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        alert('Failed to update settings. Please try again.');
+    }
+}
+
+async function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]); // Get base64 data
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+function resetSettings() {
+    document.getElementById('addName').value = '';
+    document.getElementById('addPhone').value = '';
+    document.getElementById('addEmail').value = '';
+    document.getElementById('addAddress').value = '';
+    document.getElementById('addMotto').value = '';
+    document.getElementById('addVision').value = '';
+    document.getElementById('addLogo').value = '';
+    document.getElementById('addSchoolType').selectedIndex = 0;
+    document.getElementById('addGender').selectedIndex = 0;
+}
